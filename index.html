@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Git Wasn't Built for Agents</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="A case for server-first version control in a world where most repository clients are CI jobs, agents and sandboxes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one left-aligned reading column (~66ch); the comparison table, calculator and diagram break out wider. */
+:root {
+  --bg: #f2f5f1;
+  --surface: #ffffff;
+  --ink: #14201b;
+  --muted: #56645c;
+  --rule: #d3dbd5;
+  --accent: #1d6a4d;
+  --accent-soft: #e1eee7;
+  --sap: #a87414;
+
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --step--1: 0.84rem;
+  --step-0: 1.05rem;
+  --step-1: 1.3rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2.4rem, 6.5vw, 4.4rem);
+
+  --read: 66ch;
+  --wide: 980px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412;
+    --surface: #151d1a;
+    --ink: #e2eae5;
+    --muted: #95a49b;
+    --rule: #28332e;
+    --accent: #62c296;
+    --accent-soft: #1a2c24;
+    --sap: #e0a845;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412;
+  --surface: #151d1a;
+  --ink: #e2eae5;
+  --muted: #95a49b;
+  --rule: #28332e;
+  --accent: #62c296;
+  --accent-soft: #1a2c24;
+  --sap: #e0a845;
+  color-scheme: dark;
+}
+
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+main {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding-block: clamp(40px, 8vw, 88px) 64px;
+  display: grid;
+  gap: clamp(56px, 9vw, 96px);
+}
+section { display: grid; gap: 20px; min-width: 0; }
+.read { max-width: var(--read); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: var(--step-3); font-weight: 800; line-height: 1.02; letter-spacing: -0.025em; }
+h2 { font-size: var(--step-2); font-weight: 700; line-height: 1.15; }
+h3 { font-size: var(--step-1); font-weight: 700; line-height: 1.25; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.eyebrow b { color: var(--accent); font-weight: 500; }
+.muted { color: var(--muted); }
+
+/* Hero */
+.hero { display: grid; gap: 28px; }
+.hero h1 { max-width: 14ch; }
+.lede { font-size: var(--step-1); line-height: 1.5; max-width: 40ch; color: var(--ink); }
+.lede + p { max-width: var(--read); color: var(--muted); }
+.fanout { width: 100%; max-width: 100%; overflow-x: auto; }
+.fanout svg { display: block; width: 100%; min-width: 560px; height: auto; }
+.fanout figcaption { font-size: var(--step--1); color: var(--muted); margin-top: 8px; }
+
+/* Comparison table */
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; }
+th, td { text-align: left; vertical-align: top; padding: 14px 16px 14px 0; border-bottom: 1px solid var(--rule); }
+thead th { font-family: var(--font-mono); font-weight: 500; font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+tbody th { font-weight: 600; width: 18%; }
+td.now { color: var(--accent); font-weight: 500; }
+
+/* Calculator */
+.calc {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: clamp(18px, 4vw, 32px);
+  display: grid;
+  gap: 28px;
+}
+.calc-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; }
+.tag { font-family: var(--font-mono); font-size: var(--step--1); color: var(--sap); letter-spacing: 0.04em; }
+.inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 20px; }
+.field { display: grid; gap: 6px; }
+.field label { font-size: var(--step--1); color: var(--muted); }
+.field input {
+  font-family: var(--font-mono);
+  font-size: var(--step-1);
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+.results { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; border-top: 1px solid var(--rule); padding-top: 24px; }
+.result { display: grid; gap: 4px; align-content: start; }
+.result .k { font-size: var(--step--1); color: var(--muted); }
+.result .v { font-family: var(--font-display); font-weight: 700; font-size: var(--step-2); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.result.win .v { color: var(--accent); }
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: 7.5em 1fr; gap: 12px; align-items: center; font-size: var(--step--1); color: var(--muted); }
+.bar span.track { height: 12px; background: var(--accent-soft); border-radius: 2px; overflow: hidden; }
+.bar span.fill { display: block; height: 100%; background: var(--muted); border-radius: 2px; transition: width 0.3s ease; }
+.bar.sparse span.fill { background: var(--accent); }
+.calc .note { font-size: var(--step--1); color: var(--muted); max-width: var(--read); }
+
+/* Capabilities */
+.caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 40px; }
+.cap { display: grid; gap: 8px; padding-block: 20px; border-top: 1px solid var(--rule); align-content: start; min-width: 0; }
+.cap h3 { color: var(--ink); }
+.cap p { color: var(--muted); }
+.cap .mono { color: var(--accent); font-size: var(--step--1); }
+
+.aside {
+  border-left: 3px solid var(--sap);
+  padding: 4px 0 4px 20px;
+  max-width: var(--read);
+  display: grid;
+  gap: 10px;
+}
+
+/* Precedent */
+.precedent { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 40px; }
+.org { display: grid; gap: 6px; align-content: start; }
+.org .who { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.org .what { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); }
+.org p { color: var(--muted); }
+
+/* Adoption steps: a real sequence, so numbered */
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: step; max-width: 760px; }
+ol.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  gap: 4px 16px;
+  padding-block: 18px;
+  border-top: 1px solid var(--rule);
+}
+ol.steps li::before {
+  content: counter(step);
+  grid-row: span 2;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-2);
+  line-height: 1;
+  color: var(--accent);
+}
+ol.steps strong { font-weight: 600; }
+ol.steps p { color: var(--muted); }
+
+/* Questions */
+ul.questions { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; max-width: var(--read); }
+ul.questions li { padding-left: 1.6em; position: relative; }
+ul.questions li::before { content: "?"; position: absolute; left: 0; top: 0; font-family: var(--font-mono); color: var(--sap); font-weight: 500; }
+
+footer {
+  border-top: 2px solid var(--ink);
+  padding-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 32px;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+footer p { max-width: 60ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bar span.fill { transition: none; }
+}
+</style>
+</head>
+<body>
+<main>
+
+  <header class="hero">
+    <p class="eyebrow"><b>Xylem</b> · a case for server-first version control</p>
+    <h1>Git wasn't built for agents</h1>
+    <p class="lede">Git assumes every clone is a complete copy of the repository that can work offline. Most clones today come from machines that are always online and live for a few minutes.</p>
+    <p>That design fit kernel maintainers trading patches in 2005. CI jobs, coding agents and sandboxes still pay its full cost: they download history they never read, rebase on their own, and wait in a queue to land. This page makes the case for moving that work to the server.</p>
+
+    <figure class="fanout" aria-label="Diagram: one server answering many short-lived clients">
+      <svg viewBox="0 0 900 230" role="img" aria-labelledby="fan-title">
+        <title id="fan-title">One server holds the history and computes answers. Many thin clients fetch only what they need.</title>
+        <g fill="none" stroke="var(--rule)" stroke-width="1.5">
+          <path d="M210 115 C 380 115, 420 30, 620 30"/>
+          <path d="M210 115 C 380 115, 420 72, 620 72"/>
+          <path d="M210 115 C 380 115, 420 115, 620 115"/>
+          <path d="M210 115 C 380 115, 420 158, 620 158"/>
+          <path d="M210 115 C 380 115, 420 200, 620 200"/>
+        </g>
+        <g fill="none" stroke="var(--accent)" stroke-width="2.5">
+          <path d="M210 115 C 380 115, 420 72, 620 72"/>
+          <path d="M210 115 C 380 115, 420 158, 620 158"/>
+        </g>
+        <rect x="20" y="60" width="190" height="110" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+        <text x="40" y="96" fill="var(--ink)" font-family="var(--font-display)" font-weight="700" font-size="20">Server</text>
+        <text x="40" y="122" fill="var(--muted)" font-family="var(--font-mono)" font-size="13">history · blame · diff</text>
+        <text x="40" y="142" fill="var(--muted)" font-family="var(--font-mono)" font-size="13">rebase · land</text>
+        <g font-family="var(--font-mono)" font-size="13">
+          <rect x="620" y="18" width="12" height="24" fill="var(--rule)"/>
+          <text x="644" y="35" fill="var(--muted)">CI job · reads 2 dirs</text>
+          <rect x="620" y="60" width="12" height="24" fill="var(--accent)"/>
+          <text x="644" y="77" fill="var(--ink)">agent · asks for blame, no checkout</text>
+          <rect x="620" y="103" width="12" height="24" fill="var(--rule)"/>
+          <text x="644" y="120" fill="var(--muted)">sandbox · sparse checkout</text>
+          <rect x="620" y="146" width="12" height="24" fill="var(--accent)"/>
+          <text x="644" y="163" fill="var(--ink)">agent · lands a 3-file change</text>
+          <rect x="620" y="188" width="12" height="24" fill="var(--rule)"/>
+          <text x="644" y="205" fill="var(--muted)">developer · works as usual</text>
+        </g>
+      </svg>
+      <figcaption>The server holds the history and computes the answers. Each client fetches only the files and answers it needs.</figcaption>
+    </figure>
+  </header>
+
+  <section>
+    <p class="eyebrow">The shift</p>
+    <h2 class="read">The typical repository client has changed</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col"></th><th scope="col">What git was designed for</th><th scope="col">Most clients today</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Who</th><td>A developer at their own machine</td><td class="now">A CI job, coding agent or sandbox</td></tr>
+          <tr><th scope="row">Lifetime</th><td>Months or years</td><td class="now">Minutes</td></tr>
+          <tr><th scope="row">Network</th><td>Often offline</td><td class="now">Always online</td></tr>
+          <tr><th scope="row">Reads</th><td>The whole tree and its full history</td><td class="now">A few directories and a few history questions</td></tr>
+          <tr><th scope="row">Count</th><td>One per person</td><td class="now">Many per person, and more with every agent</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">The cost</p>
+    <h2 class="read">Agents multiply every clone, rebase and queue wait</h2>
+    <p class="read">Repository costs used to grow with headcount. With agents they grow with the number of runs. An engineer with twenty parallel agents is twenty clients, and each one clones, rebases and waits for its turn to land. Put in your own numbers to see the difference between full checkouts and sparse ones.</p>
+
+    <div class="calc" id="calc">
+      <div class="calc-head">
+        <h3>Data fetched per day</h3>
+        <span class="tag">example values · replace with yours</span>
+      </div>
+      <div class="inputs">
+        <div class="field">
+          <label for="engineers">Engineers</label>
+          <input id="engineers" type="number" min="1" step="1" value="50" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="runs">Agent and CI runs per engineer per day</label>
+          <input id="runs" type="number" min="1" step="1" value="20" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="size">Data fetched by one full checkout (GB)</label>
+          <input id="size" type="number" min="0.01" step="0.1" value="3" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="share">Share of the repository a run actually needs (%)</label>
+          <input id="share" type="number" min="0.1" max="100" step="0.5" value="5" inputmode="decimal">
+        </div>
+      </div>
+      <div class="results" aria-live="polite">
+        <div class="result"><span class="k">Checkouts per day</span><span class="v" id="r-runs">1,000</span></div>
+        <div class="result"><span class="k">Full checkouts</span><span class="v" id="r-full">3.0 TB</span></div>
+        <div class="result win"><span class="k">Sparse checkouts</span><span class="v" id="r-sparse">150 GB</span></div>
+      </div>
+      <div class="bars" aria-hidden="true">
+        <div class="bar"><span>Full</span><span class="track"><span class="fill" id="b-full" style="width:100%"></span></span></div>
+        <div class="bar sparse"><span>Sparse</span><span class="track"><span class="fill" id="b-sparse" style="width:5%"></span></span></div>
+      </div>
+      <p class="note">This counts bytes only. It leaves out shared caches, which cut the sparse number further, and time spent in rebases and merge queues, which bytes don't capture.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">The idea</p>
+    <h2 class="read">Let the server do the work</h2>
+    <p class="read">If clients are always online, the server can hold the history and do the expensive work. Clients become thin. Four things follow.</p>
+    <div class="caps">
+      <div class="cap">
+        <span class="mono">log · blame · diff · merge-base</span>
+        <h3>History as an API</h3>
+        <p>The server answers history questions directly. A job that needs an answer never needs a working copy, and bisect or auto-revert can run without a single checkout.</p>
+      </div>
+      <div class="cap">
+        <span class="mono">clone --sparse</span>
+        <h3>Sparse by default</h3>
+        <p>Clients fetch only the directories and files they work in. Checkout cost follows the size of the task, not the size of the repository.</p>
+      </div>
+      <div class="cap">
+        <span class="mono">rebase + compare-and-swap</span>
+        <h3>Landing without a queue</h3>
+        <p>The server rebases a change onto main and moves main with a compare-and-swap. A commit costs O(size of change), and changes that touch different files land in parallel.</p>
+      </div>
+      <div class="cap">
+        <span class="mono">content-addressed, immutable</span>
+        <h3>Cache anything, anywhere</h3>
+        <p>Every object is named by its hash and never changes. A cache on the build node, a regional cache or the server can answer any request without coordinating.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="aside">
+      <h3>What git already handles</h3>
+      <p>Partial clone, sparse-checkout, Scalar and merge queues already make git cheaper to copy, and they cover a lot of the problem. Two gaps remain. History is still something you download and compute locally, not something you can query. And every change still lines up behind a single queue in front of main. Those are the two places where agents hurt most.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Precedent</p>
+    <h2 class="read">The largest engineering teams already got here</h2>
+    <div class="precedent">
+      <div class="org">
+        <span class="who">Google</span>
+        <span class="what">Piper</span>
+        <p>A centralized server holds one huge monorepo. Developers work in workspaces backed by it instead of local clones.</p>
+      </div>
+      <div class="org">
+        <span class="who">Meta</span>
+        <span class="what">Sapling and Mononoke</span>
+        <p>A scalable source control server paired with a client that fetches files and history lazily.</p>
+      </div>
+      <div class="org">
+        <span class="who">Anthropic</span>
+        <span class="what">Scion</span>
+        <p>Described in their engineering post on <a href="https://www.anthropic.com/engineering/redesigning-source-control">redesigning source control</a>.</p>
+      </div>
+    </div>
+    <p class="read">Each built its own system because it hit the limits of git first. Agents bring those limits to much smaller teams.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Adoption</p>
+    <h2 class="read">You can start without leaving git</h2>
+    <ol class="steps">
+      <li><strong>Mirror</strong><p>Import the git repository and keep it in sync. Git stays the source of truth, and nobody changes how they work.</p></li>
+      <li><strong>Read</strong><p>Point agents and CI at the server for sparse checkouts and history queries. This is where most of the byte and time savings show up.</p></li>
+      <li><strong>Land</strong><p>Let agents land through the server, and export each commit back to git so code review, IDEs and existing tools keep working.</p></li>
+      <li><strong>Decide</strong><p>Move people over only if and when the numbers justify it.</p></li>
+    </ol>
+  </section>
+
+  <section>
+    <p class="eyebrow">Measure first</p>
+    <h2 class="read">Questions to ask your team this week</h2>
+    <ul class="questions">
+      <li>What share of last week's clones were made by people?</li>
+      <li>How many CI minutes go to clone and fetch?</li>
+      <li>How much data does a typical job fetch, compared with the files it actually opens?</li>
+      <li>How long does a change wait to land, at the median and at p90?</li>
+      <li>How often does an agent's change fail to land because of a rebase against files it never touched?</li>
+    </ul>
+    <p class="read muted">If the answers are "very few", "a lot" and "too long", git's design is costing you more than you think.</p>
+  </section>
+
+  <footer>
+    <p>Xylem is an open-source, server-first version control system written in Go, with Postgres and S3-compatible storage. It is in early development. Source: <a href="https://github.com/delefrati/xylem" class="mono">github.com/delefrati/xylem</a></p>
+    <p class="mono">October 2026</p>
+  </footer>
+
+</main>
+
+<script>
+(function () {
+  var ids = ["engineers", "runs", "size", "share"];
+  var el = {};
+  ids.concat(["r-runs", "r-full", "r-sparse", "b-full", "b-sparse"]).forEach(function (id) { el[id] = document.getElementById(id); });
+
+  function num(id) {
+    var v = parseFloat(el[id].value);
+    return isFinite(v) && v > 0 ? v : 0;
+  }
+  function bytes(gb) {
+    if (gb >= 1000000) return (gb / 1000000).toFixed(1) + " PB";
+    if (gb >= 1000) return (gb / 1000).toFixed(1) + " TB";
+    if (gb >= 10) return Math.round(gb).toLocaleString("en-US") + " GB";
+    return gb.toFixed(1) + " GB";
+  }
+  function update() {
+    var runs = num("engineers") * num("runs");
+    var full = runs * num("size");
+    var share = Math.min(num("share"), 100) / 100;
+    var sparse = full * share;
+    el["r-runs"].textContent = Math.round(runs).toLocaleString("en-US");
+    el["r-full"].textContent = bytes(full);
+    el["r-sparse"].textContent = bytes(sparse);
+    el["b-full"].style.width = full > 0 ? "100%" : "0%";
+    el["b-sparse"].style.width = full > 0 ? Math.max(share * 100, 0.5) + "%" : "0%";
+  }
+  ids.forEach(function (id) { el[id].addEventListener("input", update); });
+  update();
+})();
+</script>
+</body>
+</html>
