@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xylem Use Cases</title>
+<meta name="description" content="Seven ways to use Xylem, a server-first version control system: what each one solves, the commands, measured numbers and where Xylem doesn't fit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Same tokens as index.html. One reading column; use cases and tables run wider. */
+:root {
+  --bg: #f2f5f1;
+  --surface: #ffffff;
+  --ink: #14201b;
+  --muted: #56645c;
+  --rule: #d3dbd5;
+  --accent: #1d6a4d;
+  --accent-soft: #e1eee7;
+  --sap: #a87414;
+  --sap-soft: #f6ecd9;
+
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --step--1: 0.84rem;
+  --step-0: 1.05rem;
+  --step-1: 1.3rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2.4rem, 6.5vw, 4.4rem);
+
+  --read: 66ch;
+  --wide: 980px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412;
+    --surface: #151d1a;
+    --ink: #e2eae5;
+    --muted: #95a49b;
+    --rule: #28332e;
+    --accent: #62c296;
+    --accent-soft: #1a2c24;
+    --sap: #e0a845;
+    --sap-soft: #2b2416;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412;
+  --surface: #151d1a;
+  --ink: #e2eae5;
+  --muted: #95a49b;
+  --rule: #28332e;
+  --accent: #62c296;
+  --accent-soft: #1a2c24;
+  --sap: #e0a845;
+  --sap-soft: #2b2416;
+  color-scheme: dark;
+}
+
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+main {
+  max-width: var(--wide);
+  margin: 0 auto;
+  padding-block: clamp(40px, 8vw, 88px) 64px;
+  display: grid;
+  gap: clamp(56px, 9vw, 96px);
+}
+section { display: grid; gap: 20px; min-width: 0; }
+.read { max-width: var(--read); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: var(--step-3); font-weight: 800; line-height: 1.02; letter-spacing: -0.025em; }
+h2 { font-size: var(--step-2); font-weight: 700; line-height: 1.15; }
+h3 { font-size: var(--step-1); font-weight: 700; line-height: 1.25; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.eyebrow b { color: var(--accent); font-weight: 500; }
+.muted { color: var(--muted); }
+
+/* Hero */
+.hero { display: grid; gap: 28px; }
+.hero h1 { max-width: 14ch; }
+.lede { font-size: var(--step-1); line-height: 1.5; max-width: 44ch; }
+.lede + p { max-width: var(--read); color: var(--muted); }
+
+/* Status chips */
+.chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.chip.now { color: var(--accent); background: var(--accent-soft); }
+.chip.review { color: var(--sap); background: var(--sap-soft); }
+.chip.planned { color: var(--muted); border: 1px solid var(--rule); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 24px; font-size: var(--step--1); color: var(--muted); align-items: center; }
+.legend span.item { display: inline-flex; gap: 8px; align-items: center; }
+
+/* Index of use cases */
+ol.toc { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 40px; counter-reset: uc; }
+ol.toc li { counter-increment: uc; border-top: 1px solid var(--rule); padding-block: 12px; display: grid; grid-template-columns: 2rem 1fr; gap: 2px 8px; }
+ol.toc li::before { content: counter(uc); font-family: var(--font-display); font-weight: 800; color: var(--accent); grid-row: span 2; }
+ol.toc a { color: var(--ink); text-decoration: none; font-weight: 600; }
+ol.toc a:hover { color: var(--accent); text-decoration: underline; }
+ol.toc .who { font-size: var(--step--1); color: var(--muted); }
+
+/* Use case */
+.uc {
+  border-top: 2px solid var(--ink);
+  padding-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 20px 40px;
+  scroll-margin-top: 24px;
+}
+@media (max-width: 760px) { .uc { grid-template-columns: minmax(0, 1fr); } }
+.uc-head { grid-column: 1 / -1; display: grid; gap: 10px; }
+.uc-head .meta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.uc-head .num { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+.uc-text { display: grid; gap: 14px; align-content: start; }
+.uc-text p { color: var(--muted); }
+.uc-text p strong { color: var(--ink); font-weight: 600; }
+.uc-text .label { font-family: var(--font-mono); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); }
+.uc-code { display: grid; gap: 10px; align-content: start; min-width: 0; }
+pre {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+pre .c { color: var(--muted); }
+.uc-code .note { font-size: var(--step--1); color: var(--muted); }
+ul.gains { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+ul.gains li { padding-left: 1.3em; position: relative; color: var(--muted); }
+ul.gains li::before { content: "→"; position: absolute; left: 0; color: var(--accent); font-family: var(--font-mono); }
+
+/* Numbers table */
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; min-width: 600px; }
+th, td { text-align: left; vertical-align: top; padding: 14px 16px 14px 0; border-bottom: 1px solid var(--rule); }
+thead th { font-family: var(--font-mono); font-weight: 500; font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+tbody th { font-weight: 600; width: 26%; }
+td.v { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.ctx { color: var(--muted); font-size: 0.95rem; }
+
+/* Doesn't fit */
+.nofit { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0 40px; }
+.nofit div { border-top: 1px solid var(--rule); padding-block: 18px; display: grid; gap: 6px; align-content: start; }
+.nofit h3 { font-size: 1.1rem; }
+.nofit p { color: var(--muted); }
+
+.aside {
+  border-left: 3px solid var(--sap);
+  padding: 4px 0 4px 20px;
+  max-width: var(--read);
+  display: grid;
+  gap: 10px;
+}
+.aside p { color: var(--muted); }
+
+footer {
+  border-top: 2px solid var(--ink);
+  padding-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 32px;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+footer p { max-width: 60ch; }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="hero">
+    <p class="eyebrow"><b>Xylem</b> · use cases</p>
+    <h1>Where Xylem fits</h1>
+    <p class="lede">Seven ways to put a server-first version control system to work, from a read-only mirror you can set up in an afternoon to a fleet of agents landing changes at once.</p>
+    <p>Each use case says what it solves, shows the commands and marks what works today. Most start with a <strong>mirror</strong>: Xylem imports a git repository and keeps up with it, while git stays the source of truth and nobody changes how they work. For why the design looks like this, see <a href="index.html">Git wasn't built for agents</a>.</p>
+    <div class="legend" aria-label="Status legend">
+      <span class="item"><span class="chip now">Works today</span> built, tested and reviewed</span>
+      <span class="item"><span class="chip review">Built, in review</span> done, final review pending</span>
+      <span class="item"><span class="chip planned">Planned</span> designed, not built yet</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="toc-h">
+    <p class="eyebrow">At a glance</p>
+    <h2 id="toc-h" class="read">Seven use cases</h2>
+    <ol class="toc">
+      <li><a href="#monorepo">Fast reads of a large monorepo</a><span class="who">Developers on one part of a huge repo</span></li>
+      <li><a href="#history-api">History as an API</a><span class="who">CI jobs, bots and tools</span></li>
+      <li><a href="#agents">Many agents landing at once</a><span class="who">Teams running coding agents in parallel</span></li>
+      <li><a href="#build-farms">Shared caches for build farms</a><span class="who">CI fleets and ephemeral sandboxes</span></li>
+      <li><a href="#many-dirs">One repo, many independent directories</a><span class="who">Contributors to plugin-style projects</span></li>
+      <li><a href="#archaeology">Code archaeology at scale</a><span class="who">Ownership, churn and audit tools</span></li>
+      <li><a href="#migration">Moving off git as the writer</a><span class="who">Teams adopting Xylem fully</span></li>
+    </ol>
+  </section>
+
+  <!-- 1 -->
+  <section class="uc" id="monorepo" aria-labelledby="uc1">
+    <div class="uc-head">
+      <div class="meta"><span class="num">01</span><span class="chip now">Works today</span><span class="eyebrow">Example: llvm/llvm-project</span></div>
+      <h2 id="uc1">Fast reads of a large monorepo</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> LLVM keeps clang, lld, lldb, MLIR, flang, libc++ and more in one repository with a long history. A clang contributor rarely touches flang, but a git clone brings everything. Shallow clones skip history and sparse-checkout skips writing files, but neither skips both.</p>
+      <p><strong>With Xylem.</strong> Mirror the repository once, then clone only the directories you build. The workspace holds the current files of those directories and no history. History questions go to the server.</p>
+      <ul class="gains">
+        <li>Checkout cost follows the directories you chose, not the repo.</li>
+        <li><code>xy status</code> only scans those directories.</li>
+        <li>Widen later with <code>xy sparse add</code>, which fetches just that directory.</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre><span class="c"># once, on the server host</span>
+git clone --mirror https://github.com/llvm/llvm-project.git /srv/llvm.git
+xylemd import --git /srv/llvm.git --branch main --repo llvm
+xylemd server &amp;
+<span class="c"># keep the mirror current (plus git fetch from cron)</span>
+xylemd import --git /srv/llvm.git --branch main --repo llvm --follow 30s
+
+<span class="c"># a clang developer</span>
+xy clone xylem:7400 ~/llvm --repo llvm --sparse llvm,clang,cmake,third-party
+cd ~/llvm
+xy status
+xy sparse add clang-tools-extra</pre>
+      <p class="note">LLVM's main has no merge commits, so its first-parent history in Xylem matches <code>git log</code> exactly. The first import of a history this size takes a while; after that, <code>--follow</code> only processes new commits.</p>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="uc" id="history-api" aria-labelledby="uc2">
+    <div class="uc-head">
+      <div class="meta"><span class="num">02</span><span class="chip now">Works today</span><span class="eyebrow">Example: any CI pipeline</span></div>
+      <h2 id="uc2">History as an API</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> Many CI steps clone a repository just to read one file, list a directory or ask which paths a commit changed. The clone is most of the job's runtime.</p>
+      <p><strong>With Xylem.</strong> Every history question is a gRPC call: resolve a revision, read a file, list a directory, log, diff, blame, merge-base and ancestry. The <code>xy</code> commands work without a workspace when you pass <code>--server</code> and <code>--repo</code>.</p>
+      <ul class="gains">
+        <li>Test selection from changed paths without a checkout.</li>
+        <li>Bisect and auto-revert tooling built on <code>Log</code>, <code>IsAncestor</code> and <code>MergeBase</code>.</li>
+        <li>Imported commits stay addressable by their git sha (<code>git:&lt;sha&gt;</code>).</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre>X="--server xylem:7400 --repo llvm"
+xy cat llvm/CMakeLists.txt -r main $X
+xy ls clang/test/Sema -r main $X
+xy log clang/lib/Sema -n 20 --oneline $X
+xy show git:3f2c9e1 $X        <span class="c"># changeset + diff, by git sha</span>
+
+<span class="c"># or call the API directly</span>
+grpcurl -plaintext -d '{"revision":"main~2"}' \
+  xylem:7400 xylem.v1.RepoService/ResolveRevision</pre>
+      <p class="note">Every RPC has a working <code>grpcurl</code> example in <code>docs/api-examples.md</code>.</p>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="uc" id="agents" aria-labelledby="uc3">
+    <div class="uc-head">
+      <div class="meta"><span class="num">03</span><span class="chip now">Works today</span><span class="eyebrow">Example: 20 coding agents on one repo</span></div>
+      <h2 id="uc3">Many agents landing at once</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> With git, each agent rebases locally, pushes, finds main has moved, and tries again. Twenty agents make that loop the bottleneck, and a merge queue serializes them all.</p>
+      <p><strong>With Xylem.</strong> <code>xy commit</code> creates a draft on the server; there is nothing to push. <code>xy land</code> asks the server to rebase the draft onto the latest main and move main with a compare-and-swap. There's no global lock.</p>
+      <ul class="gains">
+        <li>Changes to different files land in parallel.</li>
+        <li>Changes to different parts of the same file merge line by line on the server.</li>
+        <li>Only overlapping edits come back, with exit code 3 and the workspace untouched.</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre><span class="c"># each agent, in its own small sparse workspace</span>
+xy clone xylem:7400 /work/agent-07 --repo app --sparse services/billing
+cd /work/agent-07
+<span class="c"># … the agent edits files …</span>
+xy commit -A -m "billing: retry webhook on 5xx"
+xy land
+case $? in
+  0) echo landed ;;
+  3) xy sync ;;   <span class="c"># real conflict: rebase onto main, resolve, retry</span>
+esac</pre>
+      <p class="note">Tested with 20 concurrent workspaces under the race detector: every non-conflicting change lands and main stays a valid first-parent chain. Binary files, symlinks and files over 8 MiB conflict as whole files.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="uc" id="build-farms" aria-labelledby="uc4">
+    <div class="uc-head">
+      <div class="meta"><span class="num">04</span><span class="chip review">Built, in review</span><span class="eyebrow">Example: a CI fleet with short-lived nodes</span></div>
+      <h2 id="uc4">Shared caches for build farms</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> Hundreds of jobs fetch the same files from the same server. Git packfiles depend on what each client already has, so they are hard to cache between clients.</p>
+      <p><strong>With Xylem.</strong> Every object is named by its hash and never changes, so any tier can serve any object without coordination. Run a cache near the fleet and a daemon on each node. Clients talk to the daemon over a Unix socket and can skip their own cache.</p>
+      <ul class="gains">
+        <li>The server only sees cache misses.</li>
+        <li>Every tier verifies the hashes it receives.</li>
+        <li>If the cache dies, clients get a clean <code>Unavailable</code> error, and the server stays under its in-flight limit.</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre><span class="c"># regional cache, next to the fleet</span>
+xylemd cache --upstream xylem:7400 \
+  --disk-dir /var/cache/xylem --disk-bytes 200000000000
+
+<span class="c"># on each build node</span>
+xylemd daemon --upstream cache-host:7400 --server xylem:7400
+
+<span class="c"># jobs on that node</span>
+xy clone unix://$XDG_RUNTIME_DIR/xylem/daemon.sock /build/src \
+  --repo app --sparse services/api --no-cache</pre>
+      <p class="note">Benchmark: 100 concurrent sparse clones through daemon → cache → server, after a 10-clone warm-up, needed 23 server reads for 4,730 object requests (0.49%). The daemon's hit rate was 98.2%.</p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="uc" id="many-dirs" aria-labelledby="uc5">
+    <div class="uc-head">
+      <div class="meta"><span class="num">05</span><span class="chip now">Works today</span><span class="eyebrow">Example: huggingface/transformers</span></div>
+      <h2 id="uc5">One repo, many independent directories</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> Some repositories are a collection of mostly separate units: hundreds of model implementations, plugins, packages or providers. A contributor works on one unit and its tests, yet clones all of them.</p>
+      <p><strong>With Xylem.</strong> A sparse profile of the unit, its tests and the shared utilities is enough. Blame and log on the shared core files, which have long histories, come from the server.</p>
+      <ul class="gains">
+        <li>Smaller checkouts for contributors and per-unit CI jobs.</li>
+        <li>Each unit's CI fetches only that unit.</li>
+        <li>A medium-sized repo like this is a good first real-world trial.</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre>git clone --mirror https://github.com/huggingface/transformers.git /srv/tf.git
+xylemd import --git /srv/tf.git --branch main --repo transformers
+xylemd verify-import --git /srv/tf.git --repo transformers --sample 200 --seed 1
+
+xy clone xylem:7400 ~/tf --repo transformers --sparse \
+  src/transformers/models/llama,src/transformers/utils,tests/models/llama
+xy blame src/transformers/modeling_utils.py</pre>
+      <p class="note">This is about the project's code. Model weights and datasets belong on a hub built for large files; see <a href="#nofit">where Xylem doesn't fit</a>.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="uc" id="archaeology" aria-labelledby="uc6">
+    <div class="uc-head">
+      <div class="meta"><span class="num">06</span><span class="chip now">Works today</span><span class="eyebrow">Example: an ownership dashboard</span></div>
+      <h2 id="uc6">Code archaeology at scale</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> Ownership maps, churn reports and audit tools run <code>git blame</code> and <code>git log</code> across thousands of files. Each call walks history on the local machine, and every run starts over.</p>
+      <p><strong>With Xylem.</strong> Blame and path history are stored on the server, computed incrementally from each changeset's parents. The first request for a file computes and stores its blame; later requests and later revisions reuse it.</p>
+      <ul class="gains">
+        <li>A dashboard can blame every file under a directory without a checkout.</li>
+        <li>Results are consistent for every client.</li>
+        <li>History follows the first parent, like <code>git log --first-parent</code>.</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre>X="--server xylem:7400 --repo app"
+xy ls services/billing -R --json $X | jq -r '.[].name' |
+while read -r f; do
+  xy blame "$f" --json $X |
+    jq -r '.origins as $o | .lines[] | $o[.origin].author.name_email'
+done | sort | uniq -c | sort -rn | head
+<span class="c"># top authors of lines currently in services/billing</span>
+
+xy log services/billing -n 200 --oneline $X   <span class="c"># churn</span></pre>
+      <p class="note">Blame matches git on 98.9% of lines in a real 18,923-commit repository. The rest differ where several equally small diffs exist and git breaks the tie differently. Xylem also doesn't follow renames in blame yet.</p>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="uc" id="migration" aria-labelledby="uc7">
+    <div class="uc-head">
+      <div class="meta"><span class="num">07</span><span class="chip planned">Planned</span><span class="eyebrow">Mirror today, export planned</span></div>
+      <h2 id="uc7">Moving off git as the writer</h2>
+    </div>
+    <div class="uc-text">
+      <p><strong>The problem.</strong> Making Xylem the source of truth is a big step if code review, IDEs and existing CI still speak git.</p>
+      <p><strong>With Xylem.</strong> Migrate in phases, with one writer at a time. The import side works today. The export side, <code>xylemd export-git</code>, writes changes landed in Xylem back to git as ordinary commits. It is designed, with a test plan, but not built yet.</p>
+      <ul class="gains">
+        <li><strong>Phase 1:</strong> git is the writer, Xylem mirrors it (works today).</li>
+        <li><strong>Phase 2:</strong> freeze git pushes and run a final import.</li>
+        <li><strong>Phase 3:</strong> Xylem is the writer, and git becomes the mirror through export (planned).</li>
+      </ul>
+    </div>
+    <div class="uc-code">
+<pre><span class="c"># phase 1 (works today)</span>
+xylemd import --git /srv/app.git --branch main --repo app --follow 30s
+
+<span class="c"># phase 3 (planned)</span>
+xylemd export-git --git /srv/app.git --branch main --repo app --follow 30s
+git -C /srv/app.git push origin main      <span class="c"># run by you or cron</span></pre>
+      <p class="note">The planned export produces the same commit sha for the same change every time, so re-runs after a crash are safe. It refuses to write if someone pushed to git on their own, and re-importing exported commits creates no duplicates. Two-way sync, with both sides writing at once, is out of scope.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="num-h">
+    <p class="eyebrow">Measured</p>
+    <h2 id="num-h" class="read">Numbers so far</h2>
+    <p class="read muted">Measured on a laptop with local Postgres, mostly on synthetic test repositories. They show the shape of the costs, not production capacity.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">What</th><th scope="col">Result</th><th scope="col">Context</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Import throughput</th><td class="v">≈ 436 commits/s</td><td class="ctx">prometheus/prometheus: 18,923 commits and 2.6 GB of blobs in 43 s, object store on tmpfs</td></tr>
+          <tr><th scope="row">Creating a commit on the server</th><td class="v">p50 2.0 ms</td><td class="ctx">10-file change on a 1,000-file tree; p99 2.6 ms</td></tr>
+          <tr><th scope="row">Blame, already computed</th><td class="v">p50 1.8–5.8 ms</td><td class="ctx">33 files of a 2,000-commit test repo; first request 15–46 ms</td></tr>
+          <tr><th scope="row">Server reads behind caches</th><td class="v">0.49%</td><td class="ctx">100 concurrent sparse clones via daemon → cache → server, after warm-up</td></tr>
+          <tr><th scope="row">Agreement with git</th><td class="v">100% / 98.9%</td><td class="ctx">trees, log, diff and merge-base match exactly; blame lines on a real 18,923-commit repo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="nofit" aria-labelledby="nofit-h">
+    <p class="eyebrow">Honest limits</p>
+    <h2 id="nofit-h" class="read">Where Xylem doesn't fit</h2>
+    <div class="nofit">
+      <div>
+        <h3>Small repositories</h3>
+        <p>If a full clone takes seconds, git is already fast enough. Xylem pays off when clones, status and history get slow, or when many clients share one repo.</p>
+      </div>
+      <div>
+        <h3>Model weights, datasets and big binaries</h3>
+        <p>Files over 64 MiB are rejected and Git LFS isn't supported. Splitting large files into shared chunks is future work. Use a store built for large files.</p>
+      </div>
+      <div>
+        <h3>Offline and distributed workflows</h3>
+        <p>Xylem assumes clients are online. Projects that live on maintainer trees and patches by email, like the Linux kernel, want what git already does.</p>
+      </div>
+      <div>
+        <h3>Shared deployments, for now</h3>
+        <p>Authentication and rate limits are planned next. Until then, run Xylem on a trusted network only.</p>
+      </div>
+      <div>
+        <h3>Submodules</h3>
+        <p>Submodule entries are skipped on import. A repository that depends on them needs another way to fetch those trees.</p>
+      </div>
+      <div>
+        <h3>Branch-heavy workflows</h3>
+        <p>Xylem has <code>main</code> and release refs. Work in progress lives in drafts, not branches. Long-lived feature branches don't map well.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="aside">
+      <h3>Where to start</h3>
+      <p>Pick one repository that is slow today, mirror it, and point a single CI job or agent at the server (use cases 1 and 2). Compare clone time and bytes fetched before and after. If the numbers are worth it, add the cache tiers, then let agents land.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Xylem is an open-source, server-first version control system written in Go, with Postgres and S3-compatible storage. It is in early development. Source: <a href="https://github.com/delefrati/xylem" class="mono">github.com/delefrati/xylem</a> · <a href="index.html">Why server-first</a></p>
+    <p class="mono">October 2026</p>
+  </footer>
+
+</main>
+</body>
+</html>
